@@ -17,7 +17,7 @@ import annotationPlugin from 'chartjs-plugin-annotation'
 import { Bar, Line, Scatter } from 'react-chartjs-2'
 import clsx from 'clsx'
 import { DEFAULT_RATES, PLAN_CONFIG, POSTGRAD_PLAN } from '@/lib/plans'
-import { LumpSumPayment, SalaryStep, SimulationInput, SimulationResult } from '@/lib/types'
+import { LumpSumPayment, PlanId, SalaryStep, SimulationInput, SimulationResult } from '@/lib/types'
 
 ChartJS.register(
   CategoryScale,
@@ -68,6 +68,14 @@ const DEFAULT_REPAYMENT_YEAR =
     DEFAULT_INPUT.undergraduateEndYear,
     DEFAULT_INPUT.postgraduateEndYear ?? DEFAULT_INPUT.undergraduateEndYear
   ) + 1
+
+const createDefaultInput = (): SimulationInput => ({
+  ...DEFAULT_INPUT,
+  incomes: DEFAULT_INCOMES.map((inc) => ({ ...inc })),
+  lumpSums: [],
+})
+
+const createDefaultExtraLump = () => ({ amount: 2000, date: `${DEFAULT_REPAYMENT_YEAR}-04` })
 
 type TaxBreakdown = {
   incomeTax: number
@@ -133,23 +141,24 @@ const computeTakeHome = (annualSalary: number, undergraduatePlan: PlanId, includ
 }
 
 export default function Home() {
-  const [input, setInput] = useState<SimulationInput>(DEFAULT_INPUT)
+  const [input, setInput] = useState<SimulationInput>(createDefaultInput)
   const [result, setResult] = useState<SimulationResult | null>(null)
   const [activeView, setActiveView] = useState<'overview' | 'salary' | 'cashflow'>('overview')
   const [sensitivityResults, setSensitivityResults] = useState<Array<{ multiplier: number; result: SimulationResult }>>([])
-  const [extraLump, setExtraLump] = useState<{ amount: number; date: string }>({
-    amount: 2000,
-    date: `${DEFAULT_REPAYMENT_YEAR}-04`,
-  })
+  const [extraLump, setExtraLump] = useState<{ amount: number; date: string }>(createDefaultExtraLump)
   const [extraLumpResult, setExtraLumpResult] = useState<SimulationResult | null>(null)
   const [salaryCurve, setSalaryCurve] = useState<
     Array<{ multiplier: number; avgSalary: number; totalRepaid: number; clearedInMonths?: number }>
   >([])
-  const [takeHomeInput, setTakeHomeInput] = useState<{ salary: number; plan: PlanId; includePgl: boolean }>({
-    salary: DEFAULT_INCOMES[0].salary,
-    plan: DEFAULT_INPUT.undergraduatePlan,
-    includePgl: DEFAULT_INPUT.postgraduateLoan > 0,
+  const [takeHomeInput, setTakeHomeInput] = useState<{ salary: number; plan: PlanId; includePgl: boolean }>(() => {
+    const base = createDefaultInput()
+    return {
+      salary: base.incomes[0]?.salary ?? DEFAULT_INCOMES[0].salary,
+      plan: base.undergraduatePlan,
+      includePgl: base.postgraduateLoan > 0,
+    }
   })
+  const selectedPlan = PLAN_CONFIG[input.undergraduatePlan]
 
   const repaymentStartYear = useMemo(
     () => Math.max(input.undergraduateEndYear, input.postgraduateEndYear ?? input.undergraduateEndYear) + 1,
@@ -253,6 +262,27 @@ export default function Home() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const resetAll = () => {
+    const baseInput = createDefaultInput()
+    const defaultLump = createDefaultExtraLump()
+    const firstSalary = baseInput.incomes[0]?.salary ?? DEFAULT_INCOMES[0].salary
+
+    setInput(baseInput)
+    setResult(null)
+    setSensitivityResults([])
+    setExtraLump(defaultLump)
+    setExtraLumpResult(null)
+    setSalaryCurve([])
+    setTakeHomeInput({
+      salary: firstSalary,
+      plan: baseInput.undergraduatePlan,
+      includePgl: baseInput.postgraduateLoan > 0,
+    })
+    setActiveView('overview')
+    setError(null)
+    setIsLoading(false)
   }
 
   const sampledTimeline = useMemo(() => {
@@ -692,15 +722,14 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="grid grid-cols-12 gap-6 xl:gap-8">
-          <section className="col-span-12 lg:col-span-6 rounded-3xl border border-white/20 bg-white/90 p-7 text-slate-900 shadow-xl backdrop-blur">
+        <div className="flex flex-col gap-6 xl:gap-8">
+          <section className="rounded-3xl border border-white/20 bg-white/90 p-7 text-slate-900 shadow-xl backdrop-blur">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.15em] text-slate-500">Budget helper</p>
                 <h2 className="text-xl font-semibold text-slate-900">Take-home pay calculator</h2>
                 <p className="text-sm text-slate-600">Quick view of PAYE + NI + SFE deductions at a given salary.</p>
               </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Updated layout</span>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
@@ -753,7 +782,7 @@ export default function Home() {
             </p>
           </section>
 
-          <section className="col-span-12 lg:col-span-6 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
+          <section className="rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Undergrad &amp; PGL</p>
@@ -762,325 +791,386 @@ export default function Home() {
               </div>
               <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800">Input</span>
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                Undergraduate plan
-                <select
-                  value={input.undergraduatePlan}
-                  onChange={(e) => {
-                    const plan = e.target.value as SimulationInput['undergraduatePlan']
-                    setInput((prev) => ({ ...prev, undergraduatePlan: plan }))
-                    setTakeHomeInput((prev) => ({ ...prev, plan }))
-                  }}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              <div className="space-y-4 lg:col-span-8">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
+                    Undergraduate plan
+                    <select
+                      value={input.undergraduatePlan}
+                      onChange={(e) => {
+                        const plan = e.target.value as SimulationInput['undergraduatePlan']
+                        setInput((prev) => ({ ...prev, undergraduatePlan: plan }))
+                        setTakeHomeInput((prev) => ({ ...prev, plan }))
+                      }}
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                    >
+                      {Object.values(PLAN_CONFIG).map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs font-normal text-slate-500">Pick the plan; details update on the right.</p>
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
+                    Undergraduate balance (£)
+                    <p className="text-xs font-normal text-slate-500">Balance at graduation before repayments begin.</p>
+                    <input
+                      type="number"
+                      min={0}
+                      className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={input.undergraduateLoan}
+                      onChange={handleNumberChange('undergraduateLoan')}
+                    />
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
+                    UG start year
+                    <p className="text-xs font-normal text-slate-500">First academic year of study (tax year basis).</p>
+                    <input
+                      type="number"
+                      min={2000}
+                      className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={input.undergraduateStartYear}
+                      onChange={handleNumberChange('undergraduateStartYear')}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
+                    UG end year
+                    <p className="text-xs font-normal text-slate-500">Final academic year; repayments start April after.</p>
+                    <input
+                      type="number"
+                      min={input.undergraduateStartYear}
+                      className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={input.undergraduateEndYear}
+                      onChange={handleNumberChange('undergraduateEndYear')}
+                    />
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
+                    Postgraduate balance (£)
+                    <p className="text-xs font-normal text-slate-500">
+                      Optional; PGL threshold £{POSTGRAD_PLAN.repaymentThreshold.toLocaleString()}.
+                    </p>
+                    <input
+                      type="number"
+                      min={0}
+                      className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={input.postgraduateLoan}
+                      onChange={handleNumberChange('postgraduateLoan')}
+                    />
+                  </label>
+                  <div className="grid grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
+                      PG start year (optional)
+                      <p className="text-xs font-normal text-slate-500">Fill only if you took a PGL.</p>
+                      <input
+                        type="number"
+                        min={2000}
+                        placeholder="e.g. 2024"
+                        className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                        value={input.postgraduateStartYear ?? ''}
+                        onChange={(e) =>
+                          setInput((prev) => ({
+                            ...prev,
+                            postgraduateStartYear: e.target.value ? Number(e.target.value) : undefined,
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
+                      PG end year (optional)
+                      <p className="text-xs font-normal text-slate-500">Repayments start April after this year.</p>
+                      <input
+                        type="number"
+                        min={input.postgraduateStartYear ?? 2000}
+                        placeholder="e.g. 2025"
+                        className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                        value={input.postgraduateEndYear ?? ''}
+                        onChange={(e) =>
+                          setInput((prev) => ({
+                            ...prev,
+                            postgraduateEndYear: e.target.value ? Number(e.target.value) : undefined,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                </div>
+                <label className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-sky-600"
+                    checked={input.includeStudyInterest}
+                    onChange={(e) => setInput((prev) => ({ ...prev, includeStudyInterest: e.target.checked }))}
+                  />
+                  Add study-period interest (Plan 2 uses RPI + 3%).
+                </label>
+              </div>
+
+              <div className="space-y-3 lg:col-span-4">
+                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 shadow-sm">
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Undergraduate plan details</p>
+                  <p className="mt-2 text-sm text-slate-700">{selectedPlan.description}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-slate-900">
+                    <div className="rounded-xl bg-white px-3 py-2 shadow-sm">
+                      <p className="text-[11px] uppercase text-slate-500">Threshold</p>
+                      <p className="text-sm font-semibold">£{selectedPlan.repaymentThreshold.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-xl bg-white px-3 py-2 shadow-sm">
+                      <p className="text-[11px] uppercase text-slate-500">Write-off</p>
+                      <p className="text-sm font-semibold">{selectedPlan.writeOffYears} years</p>
+                    </div>
+                    <div className="rounded-xl bg-white px-3 py-2 shadow-sm">
+                      <p className="text-[11px] uppercase text-slate-500">Repayment rate</p>
+                      <p className="text-sm font-semibold">{(selectedPlan.repaymentRate * 100).toFixed(0)}% over threshold</p>
+                    </div>
+                    <div className="rounded-xl bg-white px-3 py-2 shadow-sm">
+                      <p className="text-[11px] uppercase text-slate-500">Repayment start</p>
+                      <p className="text-sm font-semibold">From Apr {repaymentStartYear}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Postgraduate loan</p>
+                    <span
+                      className={clsx(
+                        'rounded-full px-3 py-1 text-[11px] font-semibold',
+                        input.postgraduateLoan > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                      )}
+                    >
+                      {input.postgraduateLoan > 0 ? 'Included' : 'Optional'}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-700">{POSTGRAD_PLAN.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-800">
+                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                      Threshold £{POSTGRAD_PLAN.repaymentThreshold.toLocaleString()}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1">{(POSTGRAD_PLAN.repaymentRate * 100).toFixed(0)}% over threshold</span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1">{POSTGRAD_PLAN.writeOffYears}-year write-off</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid grid-cols-12 gap-6 xl:gap-8">
+            <section className="col-span-12 lg:col-span-6 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Assumptions</p>
+                  <h2 className="text-xl font-semibold text-slate-900">Rate assumptions</h2>
+                  <p className="text-sm text-slate-600">Defaults mirror recent SFE figures—edit to reflect current guidance.</p>
+                </div>
+                <button
+                  className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  onClick={() => setInput((prev) => ({ ...prev, ...DEFAULT_RATES }))}
                 >
-                  {Object.values(PLAN_CONFIG).map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-xs font-normal text-slate-500">{PLAN_CONFIG[input.undergraduatePlan].description}</span>
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                Undergraduate balance (£)
-                <input
-                  type="number"
-                  min={0}
-                  className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                  value={input.undergraduateLoan}
-                  onChange={handleNumberChange('undergraduateLoan')}
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-3 lg:col-span-3">
+                  Reset
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                  UG start year
+                  RPI (decimal)
                   <input
                     type="number"
-                    min={2000}
+                    step="0.001"
                     className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={input.undergraduateStartYear}
-                    onChange={handleNumberChange('undergraduateStartYear')}
+                    value={input.rpi}
+                    onChange={handleNumberChange('rpi')}
                   />
+                  <span className="text-xs font-normal text-slate-500">Plan 1/5 use RPI; Plan 2 varies up to RPI+3%.</span>
                 </label>
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                  UG end year
+                  BoE base rate (decimal)
                   <input
                     type="number"
-                    min={input.undergraduateStartYear}
+                    step="0.001"
                     className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={input.undergraduateEndYear}
-                    onChange={handleNumberChange('undergraduateEndYear')}
+                    value={input.baseRate}
+                    onChange={handleNumberChange('baseRate')}
                   />
-                </label>
-              </div>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                Postgraduate balance (£)
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                  <span>Optional</span>
-                  <span className="font-normal">PGL threshold £{POSTGRAD_PLAN.repaymentThreshold.toLocaleString()}</span>
-                </div>
-                <input
-                  type="number"
-                  min={0}
-                  className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                  value={input.postgraduateLoan}
-                  onChange={handleNumberChange('postgraduateLoan')}
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-3 lg:col-span-3">
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                  PG start year (optional)
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>Optional</span>
-                  </div>
-                  <input
-                    type="number"
-                    min={2000}
-                    placeholder="e.g. 2024"
-                    className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={input.postgraduateStartYear ?? ''}
-                    onChange={(e) =>
-                      setInput((prev) => ({
-                        ...prev,
-                        postgraduateStartYear: e.target.value ? Number(e.target.value) : undefined,
-                      }))
-                    }
-                  />
+                  <span className="text-xs font-normal text-slate-500">Plan 1 interest is the lower of RPI or base + 1%.</span>
                 </label>
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                  PG end year (optional)
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>Optional</span>
-                  </div>
-                  <input
-                    type="number"
-                    min={input.postgraduateStartYear ?? 2000}
-                    placeholder="e.g. 2025"
-                    className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={input.postgraduateEndYear ?? ''}
-                    onChange={(e) =>
-                      setInput((prev) => ({
-                        ...prev,
-                        postgraduateEndYear: e.target.value ? Number(e.target.value) : undefined,
-                      }))
-                    }
-                  />
-                </label>
-              </div>
-              <label className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800 lg:col-span-3">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-sky-600"
-                  checked={input.includeStudyInterest}
-                  onChange={(e) => setInput((prev) => ({ ...prev, includeStudyInterest: e.target.checked }))}
-                />
-                Add study-period interest (Plan 2 uses RPI + 3%).
-              </label>
-            </div>
-          </section>
-
-          <section className="col-span-12 lg:col-span-6 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Assumptions</p>
-                <h2 className="text-xl font-semibold text-slate-900">Rate assumptions</h2>
-                <p className="text-sm text-slate-600">Defaults mirror recent SFE figures—edit to reflect current guidance.</p>
-              </div>
-              <button
-                className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                onClick={() => setInput((prev) => ({ ...prev, ...DEFAULT_RATES }))}
-              >
-                Reset
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                RPI (decimal)
-                <input
-                  type="number"
-                  step="0.001"
-                  className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                  value={input.rpi}
-                  onChange={handleNumberChange('rpi')}
-                />
-                <span className="text-xs font-normal text-slate-500">Plan 1/5 use RPI; Plan 2 varies up to RPI+3%.</span>
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                BoE base rate (decimal)
-                <input
-                  type="number"
-                  step="0.001"
-                  className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                  value={input.baseRate}
-                  onChange={handleNumberChange('baseRate')}
-                />
-                <span className="text-xs font-normal text-slate-500">Plan 1 interest is the lower of RPI or base + 1%.</span>
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                Plan 2 interest lower income (£)
-                <input
-                  type="number"
-                  min={0}
-                  className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                  value={input.plan2InterestLowerIncome}
-                  onChange={handleNumberChange('plan2InterestLowerIncome')}
-                />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
-                Plan 2 interest upper income (£)
-                <input
-                  type="number"
-                  min={input.plan2InterestLowerIncome}
-                  className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                  value={input.plan2InterestUpperIncome}
-                  onChange={handleNumberChange('plan2InterestUpperIncome')}
-                />
-              </label>
-            </div>
-          </section>
-
-          <section className="col-span-12 lg:col-span-6 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Income timeline</p>
-                <h2 className="text-xl font-semibold text-slate-900">Salary by tax year</h2>
-                <p className="text-sm text-slate-600">Applied from April of the given year.</p>
-              </div>
-              <button
-                className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                onClick={() => {
-                  const last = input.incomes[input.incomes.length - 1]
-                  setInput((prev) => ({
-                    ...prev,
-                    incomes: [...prev.incomes, { year: (last?.year ?? new Date().getFullYear()) + 1, salary: last?.salary ?? 30000 }],
-                  }))
-                }}
-              >
-                + Add year
-              </button>
-            </div>
-            <div className="flex flex-col gap-3">
-              {input.incomes.map((row, idx) => (
-                <div key={`${row.year}-${idx}`} className="grid grid-cols-12 gap-3">
-                  <input
-                    type="number"
-                    min={2000}
-                    className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={row.year}
-                    onChange={(e) => updateIncome(idx, 'year', Number(e.target.value))}
-                  />
+                  Plan 2 interest lower income (£)
                   <input
                     type="number"
                     min={0}
-                    className="col-span-6 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={row.salary}
-                    onChange={(e) => updateIncome(idx, 'salary', Number(e.target.value))}
+                    className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                    value={input.plan2InterestLowerIncome}
+                    onChange={handleNumberChange('plan2InterestLowerIncome')}
                   />
-                  <button
-                    className={clsx(
-                      'col-span-2 rounded-xl px-3 py-3 text-xs font-semibold transition',
-                      idx === 0 ? 'cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                    )}
-                    disabled={idx === 0}
-                    onClick={() =>
-                      setInput((prev) => ({
-                        ...prev,
-                        incomes: prev.incomes.filter((_, i) => i !== idx),
-                      }))
-                    }
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="col-span-12 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">One-off payments</p>
-                <h2 className="text-xl font-semibold text-slate-900">Lump sum payments</h2>
-                <p className="text-sm text-slate-600">Optional one-off repayments to cut interest.</p>
-              </div>
-              <button
-                className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                onClick={() =>
-                  setInput((prev) => ({
-                    ...prev,
-                    lumpSums: [...prev.lumpSums, { date: `${repaymentStartYear}-04`, amount: 1000, target: 'auto' }],
-                  }))
-                }
-              >
-                + Add lump sum
-              </button>
-            </div>
-            <div className="flex flex-col gap-3">
-              {input.lumpSums.length === 0 && <p className="text-sm text-slate-600">No lump sums added yet.</p>}
-              {input.lumpSums.map((row, idx) => (
-                <div key={`${row.date}-${idx}`} className="grid grid-cols-12 gap-3">
-                  <input
-                    type="month"
-                    className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={row.date}
-                    onChange={(e) => updateLump(idx, 'date', e.target.value)}
-                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-800">
+                  Plan 2 interest upper income (£)
                   <input
                     type="number"
-                    min={0}
-                    className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={row.amount}
-                    onChange={(e) => updateLump(idx, 'amount', Number(e.target.value))}
+                    min={input.plan2InterestLowerIncome}
+                    className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                    value={input.plan2InterestUpperIncome}
+                    onChange={handleNumberChange('plan2InterestUpperIncome')}
                   />
-                  <select
-                    className="col-span-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                    value={row.target ?? 'auto'}
-                    onChange={(e) => updateLump(idx, 'target', e.target.value)}
-                  >
-                    <option value="auto">Auto (higher interest first)</option>
-                    <option value="undergrad">Undergrad first</option>
-                    <option value="postgrad">Postgrad first</option>
-                  </select>
-                  <button
-                    className="col-span-1 rounded-xl bg-rose-50 px-3 py-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
-                    onClick={() =>
-                      setInput((prev) => ({
-                        ...prev,
-                        lumpSums: prev.lumpSums.filter((_, i) => i !== idx),
-                      }))
-                    }
-                  >
-                    ×
-                  </button>
+                </label>
+              </div>
+            </section>
+
+            <section className="col-span-12 lg:col-span-6 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Income timeline</p>
+                  <h2 className="text-xl font-semibold text-slate-900">Salary by tax year</h2>
+                  <p className="text-sm text-slate-600">Applied from April of the given year.</p>
                 </div>
-              ))}
-            </div>
-          </section>
+                <button
+                  className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  onClick={() => {
+                    const last = input.incomes[input.incomes.length - 1]
+                    setInput((prev) => ({
+                      ...prev,
+                      incomes: [...prev.incomes, { year: (last?.year ?? new Date().getFullYear()) + 1, salary: last?.salary ?? 30000 }],
+                    }))
+                  }}
+                >
+                  + Add year
+                </button>
+              </div>
+              <div className="flex flex-col gap-3">
+                {input.incomes.map((row, idx) => (
+                  <div key={`${row.year}-${idx}`} className="grid grid-cols-12 gap-3">
+                    <input
+                      type="number"
+                      min={2000}
+                      className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={row.year}
+                      onChange={(e) => updateIncome(idx, 'year', Number(e.target.value))}
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      className="col-span-6 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={row.salary}
+                      onChange={(e) => updateIncome(idx, 'salary', Number(e.target.value))}
+                    />
+                    <button
+                      className={clsx(
+                        'col-span-2 rounded-xl px-3 py-3 text-xs font-semibold transition',
+                        idx === 0 ? 'cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                      )}
+                      disabled={idx === 0}
+                      onClick={() =>
+                        setInput((prev) => ({
+                          ...prev,
+                          incomes: prev.incomes.filter((_, i) => i !== idx),
+                        }))
+                      }
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="col-span-12 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">One-off payments</p>
+                  <h2 className="text-xl font-semibold text-slate-900">Lump sum payments</h2>
+                  <p className="text-sm text-slate-600">Optional one-off repayments to cut interest.</p>
+                </div>
+                <button
+                  className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  onClick={() =>
+                    setInput((prev) => ({
+                      ...prev,
+                      lumpSums: [...prev.lumpSums, { date: `${repaymentStartYear}-04`, amount: 1000, target: 'auto' }],
+                    }))
+                  }
+                >
+                  + Add lump sum
+                </button>
+              </div>
+              <div className="flex flex-col gap-3">
+                {input.lumpSums.length === 0 && <p className="text-sm text-slate-600">No lump sums added yet.</p>}
+                {input.lumpSums.map((row, idx) => (
+                  <div key={`${row.date}-${idx}`} className="grid grid-cols-12 gap-3">
+                    <input
+                      type="month"
+                      className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={row.date}
+                      onChange={(e) => updateLump(idx, 'date', e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={row.amount}
+                      onChange={(e) => updateLump(idx, 'amount', Number(e.target.value))}
+                    />
+                    <select
+                      className="col-span-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      value={row.target ?? 'auto'}
+                      onChange={(e) => updateLump(idx, 'target', e.target.value)}
+                    >
+                      <option value="auto">Auto (higher interest first)</option>
+                      <option value="undergrad">Undergrad first</option>
+                      <option value="postgrad">Postgrad first</option>
+                    </select>
+                    <button
+                      className="col-span-1 rounded-xl bg-rose-50 px-3 py-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                      onClick={() =>
+                        setInput((prev) => ({
+                          ...prev,
+                          lumpSums: prev.lumpSums.filter((_, i) => i !== idx),
+                        }))
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-3 rounded-3xl border border-white/20 bg-white/95 p-6 text-slate-900 shadow-xl backdrop-blur">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Simulation</p>
-              <h3 className="text-xl font-semibold text-slate-900">Run the model</h3>
-              <p className="text-sm text-slate-600">
-                Repayments start from April {repaymentStartYear}. PGL and undergraduate deductions are calculated independently.
-              </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Simulation</p>
+                <h3 className="text-xl font-semibold text-slate-900">Run the model</h3>
+                <p className="text-sm text-slate-600">
+                  Repayments start from April {repaymentStartYear}. PGL and undergraduate deductions are calculated independently.
+                </p>
+              </div>
+              <div className="flex flex-col items-start gap-2 sm:items-end">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={runSimulation}
+                    disabled={isLoading}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-sky-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isLoading ? 'Calculating…' : 'Calculate repayment path'}
+                  </button>
+                  <button
+                    onClick={resetAll}
+                    disabled={isLoading}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    Reset inputs
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 sm:text-right">
+                  Repayment rates: 9% over thresholds (UG), 6% over £{POSTGRAD_PLAN.repaymentThreshold.toLocaleString()} (PGL).
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={runSimulation}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-sky-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isLoading ? 'Calculating…' : 'Calculate repayment path'}
-              </button>
-              <p className="text-xs text-slate-500">
-                Repayment rates: 9% over thresholds (UG), 6% over £{POSTGRAD_PLAN.repaymentThreshold.toLocaleString()} (PGL).
-              </p>
-            </div>
-          </div>
           {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
         </div>
 
