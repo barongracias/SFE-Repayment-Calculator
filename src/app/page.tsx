@@ -5,6 +5,7 @@ import {
   BarElement,
   CategoryScale,
   Chart as ChartJS,
+  type ChartData,
   Filler,
   Legend,
   LineElement,
@@ -358,7 +359,7 @@ export default function Home() {
     if (!summary?.writeOffDate || !sampledTimeline) return undefined
     const label = summary.writeOffDate.slice(0, 7)
     return {
-      type: 'line',
+      type: 'line' as const,
       xMin: label,
       xMax: label,
       borderColor: '#7c3aed',
@@ -367,7 +368,7 @@ export default function Home() {
       label: {
         content: 'Write-off horizon',
         enabled: true,
-        position: 'start',
+        position: 'start' as const,
         backgroundColor: 'rgba(124, 58, 237, 0.1)',
         color: '#4c1d95',
         padding: 4,
@@ -417,7 +418,6 @@ export default function Home() {
     const peakPoint = peak ? [{ x: peak.x, y: peak.y }] : []
 
     return {
-      annotation: peakAnnotation,
       datasets: [
         {
           label: 'Current path (cumulative repaid)',
@@ -426,7 +426,7 @@ export default function Home() {
           borderColor: '#0ea5e9',
           showLine: true,
           pointRadius: 3,
-          parsing: false,
+          parsing: false as const,
           tension: 0.25,
         },
         {
@@ -436,7 +436,7 @@ export default function Home() {
           borderColor: '#f97316',
           showLine: true,
           pointRadius: 3,
-          parsing: false,
+          parsing: false as const,
           tension: 0.2,
         },
         {
@@ -446,10 +446,10 @@ export default function Home() {
           borderColor: '#f97316',
           showLine: false,
           pointRadius: 6,
-          parsing: false,
+          parsing: false as const,
         },
       ],
-    }
+    } as unknown as ChartData<'scatter', { x: number; y: number }[], unknown>
   }, [result?.monthly, salaryCurve])
 
   const salaryVsYears = useMemo(() => {
@@ -475,7 +475,7 @@ export default function Home() {
           borderColor: '#10b981',
           showLine: true,
           pointRadius: 3,
-          parsing: false,
+          parsing: false as const,
           tension: 0.2,
         },
         {
@@ -485,10 +485,10 @@ export default function Home() {
           borderColor: '#f59e0b',
           showLine: false,
           pointRadius: 6,
-          parsing: false,
+          parsing: false as const,
         },
       ],
-    }
+    } as unknown as ChartData<'scatter', { x: number; y: number }[], unknown>
   }, [salaryCurve, input.incomes, summary?.clearedInMonths])
 
   const marginalChart = useMemo(() => {
@@ -513,12 +513,12 @@ export default function Home() {
           backgroundColor: 'rgba(124, 58, 237, 0.1)',
           tension: 0.25,
           fill: true,
-          parsing: false,
+          parsing: false as const,
           showLine: true,
           pointRadius: 3,
         },
       ],
-    }
+    } as ChartData<'line', { x: number; y: number }[], number>
   }, [result?.monthly])
 
   const waterfallChart = useMemo(() => {
@@ -723,7 +723,7 @@ export default function Home() {
         </header>
 
         <div className="flex flex-col gap-6 xl:gap-8">
-          <section className="rounded-3xl border border-white/20 bg-white/90 p-7 text-slate-900 shadow-xl backdrop-blur">
+          <section className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-7 text-slate-900">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.15em] text-slate-500">Budget helper</p>
@@ -737,7 +737,7 @@ export default function Home() {
                 <input
                   type="number"
                   min={0}
-                  className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                  className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                   value={takeHomeInput.salary}
                   onChange={(e) => setTakeHomeInput((prev) => ({ ...prev, salary: Number(e.target.value) }))}
                 />
@@ -747,7 +747,7 @@ export default function Home() {
                 <select
                   value={takeHomeInput.plan}
                   onChange={(e) => setTakeHomeInput((prev) => ({ ...prev, plan: e.target.value as PlanId }))}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                  className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                 >
                   {Object.values(PLAN_CONFIG).map((plan) => (
                     <option key={plan.id} value={plan.id}>
@@ -782,7 +782,7 @@ export default function Home() {
             </p>
           </section>
 
-          <section className="rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
+          <section className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-7 text-slate-900">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Undergrad &amp; PGL</p>
@@ -803,7 +803,7 @@ export default function Home() {
                         setInput((prev) => ({ ...prev, undergraduatePlan: plan }))
                         setTakeHomeInput((prev) => ({ ...prev, plan }))
                       }}
-                      className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                     >
                       {Object.values(PLAN_CONFIG).map((plan) => (
                         <option key={plan.id} value={plan.id}>
@@ -819,7 +819,7 @@ export default function Home() {
                     <input
                       type="number"
                       min={0}
-                      className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={input.undergraduateLoan}
                       onChange={handleNumberChange('undergraduateLoan')}
                     />
@@ -832,7 +832,7 @@ export default function Home() {
                     <input
                       type="number"
                       min={2000}
-                      className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={input.undergraduateStartYear}
                       onChange={handleNumberChange('undergraduateStartYear')}
                     />
@@ -843,7 +843,7 @@ export default function Home() {
                     <input
                       type="number"
                       min={input.undergraduateStartYear}
-                      className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={input.undergraduateEndYear}
                       onChange={handleNumberChange('undergraduateEndYear')}
                     />
@@ -858,7 +858,7 @@ export default function Home() {
                     <input
                       type="number"
                       min={0}
-                      className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={input.postgraduateLoan}
                       onChange={handleNumberChange('postgraduateLoan')}
                     />
@@ -871,7 +871,7 @@ export default function Home() {
                         type="number"
                         min={2000}
                         placeholder="e.g. 2024"
-                        className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                        className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                         value={input.postgraduateStartYear ?? ''}
                         onChange={(e) =>
                           setInput((prev) => ({
@@ -888,7 +888,7 @@ export default function Home() {
                         type="number"
                         min={input.postgraduateStartYear ?? 2000}
                         placeholder="e.g. 2025"
-                        className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                        className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                         value={input.postgraduateEndYear ?? ''}
                         onChange={(e) =>
                           setInput((prev) => ({
@@ -960,7 +960,7 @@ export default function Home() {
           </section>
 
           <div className="grid grid-cols-12 gap-6 xl:gap-8">
-            <section className="col-span-12 lg:col-span-6 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
+            <section className="col-span-12 lg:col-span-6 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-7 text-slate-900">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Assumptions</p>
@@ -968,7 +968,7 @@ export default function Home() {
                   <p className="text-sm text-slate-600">Defaults mirror recent SFE figures—edit to reflect current guidance.</p>
                 </div>
                 <button
-                  className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  className="rounded-full bg-slate-800 hover:bg-slate-700 px-3 py-1 text-xs font-semibold text-white shadow-sm transition-all duration-150"
                   onClick={() => setInput((prev) => ({ ...prev, ...DEFAULT_RATES }))}
                 >
                   Reset
@@ -980,7 +980,7 @@ export default function Home() {
                   <input
                     type="number"
                     step="0.001"
-                    className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                    className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                     value={input.rpi}
                     onChange={handleNumberChange('rpi')}
                   />
@@ -991,7 +991,7 @@ export default function Home() {
                   <input
                     type="number"
                     step="0.001"
-                    className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                    className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                     value={input.baseRate}
                     onChange={handleNumberChange('baseRate')}
                   />
@@ -1002,7 +1002,7 @@ export default function Home() {
                   <input
                     type="number"
                     min={0}
-                    className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                    className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                     value={input.plan2InterestLowerIncome}
                     onChange={handleNumberChange('plan2InterestLowerIncome')}
                   />
@@ -1012,7 +1012,7 @@ export default function Home() {
                   <input
                     type="number"
                     min={input.plan2InterestLowerIncome}
-                    className="rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                    className="bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                     value={input.plan2InterestUpperIncome}
                     onChange={handleNumberChange('plan2InterestUpperIncome')}
                   />
@@ -1020,7 +1020,7 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="col-span-12 lg:col-span-6 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
+            <section className="col-span-12 lg:col-span-6 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-7 text-slate-900">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Income timeline</p>
@@ -1028,7 +1028,7 @@ export default function Home() {
                   <p className="text-sm text-slate-600">Applied from April of the given year.</p>
                 </div>
                 <button
-                  className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  className="rounded-full bg-slate-800 hover:bg-slate-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-150"
                   onClick={() => {
                     const last = input.incomes[input.incomes.length - 1]
                     setInput((prev) => ({
@@ -1046,14 +1046,14 @@ export default function Home() {
                     <input
                       type="number"
                       min={2000}
-                      className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="col-span-4 bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={row.year}
                       onChange={(e) => updateIncome(idx, 'year', Number(e.target.value))}
                     />
                     <input
                       type="number"
                       min={0}
-                      className="col-span-6 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="col-span-6 bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={row.salary}
                       onChange={(e) => updateIncome(idx, 'salary', Number(e.target.value))}
                     />
@@ -1077,7 +1077,7 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="col-span-12 rounded-3xl border border-white/20 bg-white/95 p-7 text-slate-900 shadow-xl backdrop-blur">
+            <section className="col-span-12 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-7 text-slate-900">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.12em] text-slate-500">One-off payments</p>
@@ -1085,7 +1085,7 @@ export default function Home() {
                   <p className="text-sm text-slate-600">Optional one-off repayments to cut interest.</p>
                 </div>
                 <button
-                  className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  className="rounded-full bg-slate-800 hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-150"
                   onClick={() =>
                     setInput((prev) => ({
                       ...prev,
@@ -1102,19 +1102,19 @@ export default function Home() {
                   <div key={`${row.date}-${idx}`} className="grid grid-cols-12 gap-3">
                     <input
                       type="month"
-                      className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="col-span-4 bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={row.date}
                       onChange={(e) => updateLump(idx, 'date', e.target.value)}
                     />
                     <input
                       type="number"
                       min={0}
-                      className="col-span-4 rounded-xl border border-slate-200 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="col-span-4 bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={row.amount}
                       onChange={(e) => updateLump(idx, 'amount', Number(e.target.value))}
                     />
                     <select
-                      className="col-span-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                      className="col-span-3 bg-white/80 border border-black/[0.08] rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                       value={row.target ?? 'auto'}
                       onChange={(e) => updateLump(idx, 'target', e.target.value)}
                     >
@@ -1140,7 +1140,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 rounded-3xl border border-white/20 bg-white/95 p-6 text-slate-900 shadow-xl backdrop-blur">
+        <div className="mt-8 flex flex-col gap-3 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-6 text-slate-900">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Simulation</p>
@@ -1154,14 +1154,14 @@ export default function Home() {
                   <button
                     onClick={runSimulation}
                     disabled={isLoading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-sky-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="inline-flex items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isLoading ? 'Calculating…' : 'Calculate repayment path'}
                   </button>
                   <button
                     onClick={resetAll}
                     disabled={isLoading}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white/80 border border-black/[0.08] px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-150 hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     Reset inputs
                   </button>
@@ -1465,7 +1465,7 @@ export default function Home() {
                     )}
                   </ChartCard>
 
-                  <div className="h-[420px] rounded-3xl border border-white/30 bg-white/95 p-5 text-slate-900 shadow-xl backdrop-blur">
+                  <div className="h-[420px] rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-5 text-slate-900">
                     <div className="mb-2 flex items-center justify-between">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">Write-off likelihood</p>
@@ -1486,7 +1486,7 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                  <div className="rounded-3xl border border-white/30 bg-white/95 p-5 text-slate-900 shadow-xl backdrop-blur">
+                  <div className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-5 text-slate-900">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">Break-even lump sum</p>
@@ -1505,7 +1505,7 @@ export default function Home() {
                         <input
                           type="number"
                           min={0}
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+                          className="bg-white/80 border border-black/[0.08] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                           value={extraLump.amount}
                           onChange={(e) => setExtraLump((prev) => ({ ...prev, amount: Number(e.target.value) }))}
                         />
@@ -1514,7 +1514,7 @@ export default function Home() {
                         Lump sum date
                         <input
                           type="month"
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+                          className="bg-white/80 border border-black/[0.08] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-shadow"
                           value={extraLump.date}
                           onChange={(e) => setExtraLump((prev) => ({ ...prev, date: e.target.value }))}
                         />
@@ -1544,7 +1544,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="overflow-hidden rounded-3xl border border-white/30 bg-white/95 text-slate-900 shadow-xl backdrop-blur">
+                <div className="overflow-hidden rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 text-slate-900">
                   <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                     <div>
                       <h3 className="text-lg font-semibold text-slate-900">Yearly breakdown</h3>
@@ -1555,7 +1555,7 @@ export default function Home() {
                   <div className="flex items-center justify-between px-4 py-2 text-xs text-slate-600">
                     <p>Export yearly cashflow to CSV for budgeting spreadsheets.</p>
                     <button
-                      className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+                      className="rounded-full bg-slate-800 hover:bg-slate-700 px-3 py-1 text-xs font-semibold text-white shadow-sm transition-all duration-150 disabled:opacity-60"
                       onClick={() => {
                         if (!result?.yearly?.length) return
                         const headers = ['year', 'opening_balance', 'interest', 'repaid', 'closing_balance']
@@ -1607,7 +1607,7 @@ export default function Home() {
           </section>
         )}
 
-        <footer className="mt-10 rounded-3xl border border-white/30 bg-white/95 px-5 py-6 text-sm text-slate-700 shadow-xl backdrop-blur">
+        <footer className="mt-10 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 px-5 py-6 text-sm text-slate-700">
           <p className="text-base font-semibold text-slate-900">Assumptions & sources</p>
           <ul className="mt-3 list-disc space-y-1 pl-5">
             <li>
@@ -1625,7 +1625,7 @@ export default function Home() {
 
 function Stat({ label, value, helper }: { label: string; value: string; helper?: string }) {
   return (
-    <div className="flex h-full flex-col gap-2 rounded-2xl border border-white/30 bg-white/90 px-5 py-4 text-slate-900 shadow-lg backdrop-blur">
+    <div className="flex h-full flex-col gap-2 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-lg shadow-black/5 px-5 py-4 text-slate-900">
       <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</p>
       <p className="text-2xl font-semibold text-slate-900">{value}</p>
       {helper && <p className="text-xs text-slate-500">{helper}</p>}
@@ -1635,7 +1635,7 @@ function Stat({ label, value, helper }: { label: string; value: string; helper?:
 
 function ChartCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
-    <div className="h-[420px] rounded-3xl border border-white/30 bg-white/95 p-5 text-slate-900 shadow-xl backdrop-blur">
+    <div className="h-[420px] rounded-2xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/5 p-5 text-slate-900">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-slate-900">{title}</p>
