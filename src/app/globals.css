@@ -4,44 +4,100 @@
 
 :root {
   color: #e2e8f0;
-  background-color: #070d1a;
+  background-color: #0a0a0f;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
-  background: radial-gradient(circle at 15% 18%, rgba(56, 189, 248, 0.14), transparent 34%),
-    radial-gradient(circle at 82% 12%, rgba(99, 102, 241, 0.2), transparent 32%),
-    radial-gradient(circle at 35% 75%, rgba(16, 185, 129, 0.15), transparent 30%),
-    #070d1a;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(56, 189, 248, 0.10), transparent 36%),
+    radial-gradient(circle at 82% 10%, rgba(99, 102, 241, 0.14), transparent 34%),
+    radial-gradient(circle at 38% 78%, rgba(16, 185, 129, 0.10), transparent 32%),
+    #0a0a0f;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #e2e8f0;
 }
 
 * {
   scroll-behavior: smooth;
 }
 
-/* Apple frosted glass utility classes */
-.glass-card {
-  background: rgba(255, 255, 255, 0.70);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.50);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.04);
+/* ── Frosted glass tokens ─────────────────────────────────────── */
+
+/* Dark panel: used for all main content cards */
+.glass-dark {
+  background: rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.30), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
+/* Slightly lighter inner panels (plan details, stat tiles, etc.) */
+.glass-inner {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
+}
+
+/* Input fields */
 .glass-input {
-  background: rgba(255, 255, 255, 0.80);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 0.75rem;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
   width: 100%;
-  transition: box-shadow 150ms ease, border-color 150ms ease;
+  color: #e2e8f0;
+  transition: box-shadow 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.glass-input::placeholder {
+  color: rgba(148, 163, 184, 0.5);
 }
 
 .glass-input:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
-  border-color: rgba(0, 122, 255, 0.4);
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.22);
+  border-color: rgba(14, 165, 233, 0.45);
+}
+
+/* Select elements need some extra coaxing in WebKit */
+select.glass-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.25rem;
+  cursor: pointer;
+}
+
+select.glass-input option {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* Checkbox accent */
+input[type="checkbox"] {
+  accent-color: #0ea5e9;
+}
+
+/* Table rows in results */
+.glass-table-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Scrollbar in the yearly table */
+.glass-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.glass-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.glass-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
 }

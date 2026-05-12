@@ -2,7 +2,6 @@ import { PLAN_CONFIG, POSTGRAD_PLAN, getAnnualInterestRate, monthlyRate, MAX_SIM
 import {
   LumpSumPayment,
   MonthlySnapshot,
-  PlanConfig,
   PlanId,
   RatesInput,
   SalaryStep,
@@ -47,7 +46,7 @@ const getSalaryForDate = (date: Date, incomes: SalaryStep[]): number => {
 }
 
 const accrualMonths = (from: Date, to: Date) => {
-  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth())
+  const months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth())
   return Math.max(0, months)
 }
 
@@ -65,28 +64,33 @@ const applyStudyInterest = (amount: number, plan: PlanId | 'postgrad', rates: Ra
   return balance
 }
 
+/** Returns new balances without mutating the input object. */
 const applyLumpToBalances = (
   lump: LumpSumPayment,
-  balances: { undergrad: number; postgrad: number },
+  undergrad: number,
+  postgrad: number,
   rates: RatesInput,
   income: number,
   plan: PlanId
-) => {
+): { undergrad: number; postgrad: number } => {
   let remaining = clampCurrency(lump.amount)
-  if (remaining <= 0) return balances
+  if (remaining <= 0) return { undergrad, postgrad }
 
   const ugRate = getAnnualInterestRate(plan, income, rates)
   const pgRate = getAnnualInterestRate('postgrad', income, rates)
 
+  let ugBal = undergrad
+  let pgBal = postgrad
+
   const payUndergrad = (amt: number) => {
-    const payment = Math.min(amt, balances.undergrad)
-    balances.undergrad = clampCurrency(balances.undergrad - payment)
+    const payment = Math.min(amt, ugBal)
+    ugBal = clampCurrency(ugBal - payment)
     remaining -= payment
   }
 
   const payPostgrad = (amt: number) => {
-    const payment = Math.min(amt, balances.postgrad)
-    balances.postgrad = clampCurrency(balances.postgrad - payment)
+    const payment = Math.min(amt, pgBal)
+    pgBal = clampCurrency(pgBal - payment)
     remaining -= payment
   }
 
@@ -94,12 +98,13 @@ const applyLumpToBalances = (
 
   if (target === 'undergrad') {
     payUndergrad(remaining)
+    if (remaining > 0) payPostgrad(remaining)
   } else if (target === 'postgrad') {
     payPostgrad(remaining)
+    if (remaining > 0) payUndergrad(remaining)
   } else {
-    // Target the balance with the higher rate, then spill over.
-    const undergradFirst = ugRate >= pgRate
-    if (undergradFirst) {
+    // Target the balance with the higher rate first, then spill over.
+    if (ugRate >= pgRate) {
       payUndergrad(remaining)
       if (remaining > 0) payPostgrad(remaining)
     } else {
@@ -108,7 +113,7 @@ const applyLumpToBalances = (
     }
   }
 
-  return balances
+  return { undergrad: ugBal, postgrad: pgBal }
 }
 
 const groupYearly = (monthly: MonthlySnapshot[], initialBalance: number): YearlySummary[] => {
@@ -169,7 +174,8 @@ export function simulateRepayments(input: SimulationInput): SimulationResult {
   const ugEnd = new Date(undergraduateEndYear + 1, 3, 1) // April after UG end
   const pgStart = postgraduateStartYear ? new Date(postgraduateStartYear, 8, 1) : null
   const pgEnd = postgraduateEndYear ? new Date(postgraduateEndYear + 1, 3, 1) : null
-  const repaymentStart = pgEnd ? (pgEnd > ugEnd ? pgEnd : ugEnd) : ugEnd // repayments begin after the latest course end
+  // Repayments begin after the latest course end.
+  const repaymentStart = pgEnd && pgEnd > ugEnd ? pgEnd : ugEnd
 
   const ugStudyMonths = includeStudyInterest ? accrualMonths(ugStart, repaymentStart) : 0
   const pgStudyMonths =
@@ -189,13 +195,13 @@ export function simulateRepayments(input: SimulationInput): SimulationResult {
   const writeOffUndergradDate = addMonths(repaymentStart, undergradPlan.writeOffYears * 12)
   const writeOffPostgradDate = addMonths(repaymentStart, POSTGRAD_PLAN.writeOffYears * 12)
 
+  // Build a lookup of lump-sum payments keyed by canonical date string.
   const lumpByMonth = new Map<string, LumpSumPayment[]>()
   lumpSums.forEach((lump) => {
     if (!lump.date) return
     const key = `${lump.date}-01`
     const existing = lumpByMonth.get(key) ?? []
-    existing.push(lump)
-    lumpByMonth.set(key, existing)
+    lumpByMonth.set(key, [...existing, lump])
   })
 
   const monthly: MonthlySnapshot[] = []
@@ -211,20 +217,20 @@ export function simulateRepayments(input: SimulationInput): SimulationResult {
   for (let monthIdx = 0; monthIdx < maxMonths; monthIdx += 1) {
     const currentDate = addMonths(repaymentStart, monthIdx)
 
-    // Stop if both balances cleared and no further lumps scheduled.
+    // Stop early if both balances are already zero.
     if (undergraduateBalance <= 0 && postgraduateBalance <= 0) break
 
     let writeOffTriggered = false
 
-    // Apply write-off if date reached.
+    // Apply write-off if the date has been reached.
     if (currentDate >= writeOffUndergradDate && undergraduateBalance > 0) {
-      writtenOffUndergrad += undergraduateBalance
+      writtenOffUndergrad = undergraduateBalance
       undergraduateBalance = 0
       writeOffTriggered = true
     }
 
     if (currentDate >= writeOffPostgradDate && postgraduateBalance > 0) {
-      writtenOffPostgrad += postgraduateBalance
+      writtenOffPostgrad = postgraduateBalance
       postgraduateBalance = 0
       writeOffTriggered = true
     }
@@ -239,7 +245,9 @@ export function simulateRepayments(input: SimulationInput): SimulationResult {
         : 0
 
     const pgInterest =
-      postgraduateBalance > 0 ? postgraduateBalance * monthlyRate(getAnnualInterestRate('postgrad', annualSalary, rates)) : 0
+      postgraduateBalance > 0
+        ? postgraduateBalance * monthlyRate(getAnnualInterestRate('postgrad', annualSalary, rates))
+        : 0
 
     undergraduateBalance += ugInterest
     postgraduateBalance += pgInterest
@@ -247,15 +255,13 @@ export function simulateRepayments(input: SimulationInput): SimulationResult {
 
     // Apply lump sums scheduled for this month.
     const lumps = lumpByMonth.get(dateKey(currentDate)) ?? []
-    if (lumps.length) {
-      lumps.forEach((lump) => {
-        const balances = applyLumpToBalances(lump, { undergrad: undergraduateBalance, postgrad: postgraduateBalance }, rates, annualSalary, undergraduatePlan)
-        undergraduateBalance = balances.undergrad
-        postgraduateBalance = balances.postgrad
-      })
+    for (const lump of lumps) {
+      const result = applyLumpToBalances(lump, undergraduateBalance, postgraduateBalance, rates, annualSalary, undergraduatePlan)
+      undergraduateBalance = result.undergrad
+      postgraduateBalance = result.postgrad
     }
 
-    // Standard repayments.
+    // Standard income-based repayments.
     const ugPayRaw =
       undergraduateBalance > 0
         ? Math.max(0, monthlySalary - undergradPlan.repaymentThreshold / 12) * undergradPlan.repaymentRate
@@ -289,25 +295,35 @@ export function simulateRepayments(input: SimulationInput): SimulationResult {
       annualSalary,
     })
 
+    // If total balance hit zero due to repayments (not write-off), record the clear.
     if (totalBalance <= 0 && clearedAtMonth === undefined) {
-      const monthsElapsed = writeOffTriggered ? monthIdx : monthIdx + 1
-      clearedAtMonth = monthsElapsed
-      clearedDate = dateKey(currentDate)
+      if (!writeOffTriggered) {
+        clearedAtMonth = monthIdx + 1
+        clearedDate = dateKey(currentDate)
+      }
       break
     }
 
-    // Stop when we have reached both write-off dates.
+    // Stop once we have passed both write-off dates.
     if (currentDate >= writeOffUndergradDate && currentDate >= writeOffPostgradDate) {
       break
     }
   }
+
+  // Determine the effective write-off date to display (the later of the two, whichever is active).
+  const effectiveWriteOffDate =
+    postgraduateLoan > 0
+      ? writeOffUndergradDate >= writeOffPostgradDate
+        ? writeOffUndergradDate
+        : writeOffPostgradDate
+      : writeOffUndergradDate
 
   const summary: SimulationSummary = {
     totalRepaid: cumulativeRepayments,
     totalInterest: cumulativeInterest,
     clearedInMonths: clearedAtMonth,
     clearedDate,
-    writeOffDate: dateKey(writeOffUndergradDate > writeOffPostgradDate ? writeOffUndergradDate : writeOffPostgradDate),
+    writeOffDate: dateKey(effectiveWriteOffDate),
     writtenOffUndergrad: writtenOffUndergrad || undefined,
     writtenOffPostgrad: writtenOffPostgrad || undefined,
   }

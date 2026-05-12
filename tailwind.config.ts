@@ -36,10 +36,7 @@ const config: Config = {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic':
-          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'apple-gradient':
-          'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #ffffff 100%)',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       backdropBlur: {
         xs: '2px',
@@ -51,10 +48,19 @@ const config: Config = {
         '3xl': '64px',
       },
       boxShadow: {
-        'apple-sm': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
+        'glass': '0 8px 32px rgba(0,0,0,0.30), 0 1px 0 rgba(255,255,255,0.06) inset',
+        'glass-sm': '0 2px 8px rgba(0,0,0,0.20)',
         'apple': '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)',
         'apple-lg': '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-        'apple-xl': '0 16px 48px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.05)',
+      },
+      // Extend the opacity scale so bg-white/8, bg-white/12, ring-white/8 etc. resolve.
+      opacity: {
+        '4': '0.04',
+        '6': '0.06',
+        '8': '0.08',
+        '12': '0.12',
+        '14': '0.14',
+        '18': '0.18',
       },
     },
   },
