@@ -418,7 +418,7 @@ export default function Home() {
       datasets: [
         { label: 'Effective repayment rate', data: data.map((d) => ({ x: d.salary, y: d.rate })), borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.10)', tension: 0.25, fill: true, parsing: false as const, showLine: true, pointRadius: 3 },
       ],
-    } as ChartData<'line', { x: number; y: number }[], number>
+    } as ChartData<'line', { x: number; y: number }[], unknown>
   }, [result?.monthly])
 
   const waterfallChart = useMemo(() => {
@@ -524,13 +524,17 @@ export default function Home() {
   }, [result?.monthly, result?.yearly, summary])
 
   // ── Shared chart option merges ────────────────────────────────
-  const lineOpts = (extra: Record<string, unknown> = {}) => ({
+  const lineOpts = (extra?: {
+    plugins?: Record<string, unknown>
+    scales?: Record<string, unknown>
+    [key: string]: unknown
+  }) => ({
     responsive: true,
     maintainAspectRatio: false,
     ...CHART_DEFAULTS,
     ...extra,
-    plugins: { ...CHART_DEFAULTS.plugins, ...(extra.plugins as object | undefined) },
-    scales: { ...CHART_DEFAULTS.scales, ...(extra.scales as object | undefined) },
+    plugins: { ...CHART_DEFAULTS.plugins, ...extra?.plugins },
+    scales: { ...CHART_DEFAULTS.scales, ...extra?.scales },
   })
 
   return (
@@ -545,24 +549,26 @@ export default function Home() {
       <div className="relative mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-12">
 
         {/* ── Header ───────────────────────────────────────────── */}
-        <header className="glass-dark mb-10 flex flex-col gap-6 rounded-3xl p-8">
+        <header className="glass-dark mb-10 flex flex-col gap-6 rounded-3xl p-8 sm:p-10">
           <div className="flex flex-col gap-3">
-            <p className="text-xs uppercase tracking-[0.28em] text-sky-300/80">Student Finance England</p>
-            <h1 className="text-4xl font-semibold text-white sm:text-5xl">Repayment Simulator</h1>
-            <p className="max-w-4xl text-base text-slate-300">
-              Model Plan 1 / Plan 2 / Plan 5 undergraduate loans and Postgraduate (PGL) repayments with salary growth and lump sums.
-              Assumptions are seeded from official SFE / gov.uk guidance—update the rates as needed.
+            <p className="text-xs font-semibold uppercase tracking-[0.30em] text-sky-400/90">Student Finance England</p>
+            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">Repayment Simulator</h1>
+            <p className="max-w-3xl text-base leading-relaxed text-slate-400">
+              Model Plan 1, Plan 2, Plan 5 undergraduate loans and Postgraduate (PGL) repayments across any salary trajectory.
+              Includes lump sums, sensitivity bands, and write-off tracking — seeded from official SFE / gov.uk guidance.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <a href="https://www.gov.uk/repaying-your-student-loan/what-you-pay" target="_blank" rel="noreferrer"
-              className="rounded-full bg-white/8 px-4 py-2 text-xs font-semibold text-sky-200 ring-1 ring-white/12 transition hover:bg-white/14">
-              Gov.uk: What you pay
-            </a>
-            <a href="https://www.gov.uk/repaying-your-student-loan/when-your-student-loan-gets-written-off-or-cancelled" target="_blank" rel="noreferrer"
-              className="rounded-full bg-white/8 px-4 py-2 text-xs font-semibold text-sky-200 ring-1 ring-white/12 transition hover:bg-white/14">
-              Gov.uk: Write-off rules
-            </a>
+          <div className="border-t border-white/6 pt-4">
+            <div className="flex flex-wrap gap-3">
+              <a href="https://www.gov.uk/repaying-your-student-loan/what-you-pay" target="_blank" rel="noreferrer"
+                className="rounded-full bg-white/8 px-4 py-2 text-xs font-semibold text-sky-300 ring-1 ring-white/10 transition hover:bg-white/14 hover:text-sky-200">
+                Gov.uk: What you pay
+              </a>
+              <a href="https://www.gov.uk/repaying-your-student-loan/when-your-student-loan-gets-written-off-or-cancelled" target="_blank" rel="noreferrer"
+                className="rounded-full bg-white/8 px-4 py-2 text-xs font-semibold text-sky-300 ring-1 ring-white/10 transition hover:bg-white/14 hover:text-sky-200">
+                Gov.uk: Write-off rules
+              </a>
+            </div>
           </div>
         </header>
 
@@ -841,12 +847,11 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
               <div className="flex items-center gap-3">
-                <button onClick={runSimulation} disabled={isLoading}
-                  className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60">
+                <button onClick={runSimulation} disabled={isLoading} className="btn-primary">
                   {isLoading ? 'Calculating…' : 'Calculate repayment path'}
                 </button>
                 <button onClick={resetAll} disabled={isLoading}
-                  className="inline-flex items-center gap-2 rounded-xl bg-white/8 px-4 py-3 text-sm font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-60">
+                  className="inline-flex items-center gap-2 rounded-full bg-white/8 px-5 py-3 text-sm font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-60">
                   Reset inputs
                 </button>
               </div>
@@ -863,6 +868,12 @@ export default function Home() {
         {/* ── Results ──────────────────────────────────────────── */}
         {result && (
           <section className="mt-10 space-y-8">
+            {/* Section label */}
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-white/6" />
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Results</p>
+              <div className="h-px flex-1 bg-white/6" />
+            </div>
             {/* Summary stats */}
             <div className="grid grid-cols-2 gap-5 xl:grid-cols-4">
               <Stat label="Total repaid" value={formatGBP(summary?.totalRepaid ?? 0)} />
@@ -1135,10 +1146,15 @@ export default function Home() {
 
 function Stat({ label, value, helper }: { label: string; value: string; helper?: string }) {
   return (
-    <div className="glass-dark flex h-full flex-col gap-2 rounded-2xl px-5 py-4">
-      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="text-2xl font-semibold text-white">{value}</p>
-      {helper && <p className="text-xs text-slate-500">{helper}</p>}
+    <div className="glass-dark flex h-full flex-col gap-1.5 rounded-2xl px-5 py-5">
+      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="text-3xl font-bold tracking-tight text-white">{value}</p>
+      {helper && (
+        <>
+          <div className="my-1 border-t border-white/6" />
+          <p className="text-xs text-slate-500">{helper}</p>
+        </>
+      )}
     </div>
   )
 }

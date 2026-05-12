@@ -10,10 +10,10 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   background:
-    radial-gradient(circle at 15% 18%, rgba(56, 189, 248, 0.10), transparent 36%),
-    radial-gradient(circle at 82% 10%, rgba(99, 102, 241, 0.14), transparent 34%),
-    radial-gradient(circle at 38% 78%, rgba(16, 185, 129, 0.10), transparent 32%),
-    #0a0a0f;
+    radial-gradient(circle at 15% 18%, rgba(56, 189, 248, 0.09), transparent 36%),
+    radial-gradient(circle at 82% 10%, rgba(99, 102, 241, 0.12), transparent 34%),
+    radial-gradient(circle at 38% 78%, rgba(16, 185, 129, 0.08), transparent 32%),
+    linear-gradient(160deg, #0a0a0f 0%, #0d1117 100%);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #e2e8f0;
@@ -31,7 +31,7 @@ body {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.30), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 /* Slightly lighter inner panels (plan details, stat tiles, etc.) */
@@ -60,8 +60,8 @@ body {
 .glass-input:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.10);
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.22);
-  border-color: rgba(14, 165, 233, 0.45);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.30);
+  border-color: rgba(10, 132, 255, 0.50);
 }
 
 /* Select elements need some extra coaxing in WebKit */
@@ -82,7 +82,7 @@ select.glass-input option {
 
 /* Checkbox accent */
 input[type="checkbox"] {
-  accent-color: #0ea5e9;
+  accent-color: #0a84ff;
 }
 
 /* Table rows in results */
@@ -100,4 +100,37 @@ input[type="checkbox"] {
 .glass-scroll::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
+}
+
+/* ── Apple-style pill buttons ─────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #0a84ff;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  border: none;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.30);
+  transition: background 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #3395ff;
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.40);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.25);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
