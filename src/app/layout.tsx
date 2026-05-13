@@ -10,14 +10,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="bg-[#0a0a0f]">
-      <head>
-        <style>{`
-          :root {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-              "Inter", system-ui, sans-serif;
-          }
-        `}</style>
-      </head>
       <body className="font-sans antialiased">{children}</body>
     </html>
   )
