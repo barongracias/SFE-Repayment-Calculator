@@ -9,29 +9,50 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
+        serif: [
+          '"Source Serif 4"',
+          '"Source Serif Pro"',
+          'Georgia',
+          '"Times New Roman"',
+          'serif',
+        ],
+        display: [
+          '"Newsreader"',
+          '"Source Serif 4"',
+          'Georgia',
+          'serif',
+        ],
+        mono: [
+          '"JetBrains Mono"',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'monospace',
+        ],
         sans: [
-          '-apple-system',
-          'BlinkMacSystemFont',
-          '"SF Pro Display"',
-          '"SF Pro Text"',
-          '"Inter"',
-          'system-ui',
-          'sans-serif',
+          '"Source Serif 4"',
+          'Georgia',
+          'serif',
         ],
       },
       colors: {
-        blue: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#007AFF',
-          600: '#0062CC',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+        // Editorial palette
+        paper: {
+          DEFAULT: '#f4efe2',
+          light: '#faf6ea',
+          deep: '#ebe4d1',
+        },
+        ink: {
+          DEFAULT: '#1a2541',
+          dim: '#4a5568',
+          faint: '#7a8294',
+        },
+        oxblood: {
+          DEFAULT: '#7a1f2a',
+          bright: '#9b2935',
+        },
+        gold: {
+          DEFAULT: '#b8923f',
         },
       },
       backgroundImage: {
@@ -48,12 +69,10 @@ const config: Config = {
         '3xl': '64px',
       },
       boxShadow: {
-        'glass': '0 8px 32px rgba(0,0,0,0.30), 0 1px 0 rgba(255,255,255,0.06) inset',
-        'glass-sm': '0 2px 8px rgba(0,0,0,0.20)',
-        'apple': '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)',
-        'apple-lg': '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
+        'glass': '0 4px 24px rgba(26,37,65,0.06), inset 0 1px 0 rgba(255,255,255,0.6)',
+        'glass-sm': '0 2px 8px rgba(26,37,65,0.05)',
+        'editorial': '0 6px 28px rgba(26,37,65,0.07), inset 0 1px 0 rgba(255,255,255,0.65)',
       },
-      // Extend the opacity scale so bg-white/8, bg-white/12, ring-white/8 etc. resolve.
       opacity: {
         '4': '0.04',
         '6': '0.06',
@@ -61,6 +80,9 @@ const config: Config = {
         '12': '0.12',
         '14': '0.14',
         '18': '0.18',
+      },
+      letterSpacing: {
+        'editorial': '0.18em',
       },
     },
   },

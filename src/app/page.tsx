@@ -33,24 +33,52 @@ ChartJS.register(
   annotationPlugin
 )
 
-// ── Shared Chart.js defaults for dark glass panels ───────────────
+// ── Shared Chart.js defaults — editorial / light theme ──────────
+// Ink-on-paper aesthetic: navy ink, oxblood accents, gold highlights.
 const CHART_DEFAULTS = {
-  color: 'rgba(148,163,184,0.85)',
+  color: 'rgba(26,37,65,0.78)',
   plugins: {
     legend: {
-      labels: { color: 'rgba(203,213,225,0.9)', boxWidth: 12, padding: 14 },
+      labels: {
+        color: 'rgba(26,37,65,0.85)',
+        boxWidth: 12,
+        padding: 14,
+        font: { family: '"Source Serif 4", Georgia, serif', size: 12 },
+      },
     },
   },
   scales: {
     x: {
-      ticks: { color: 'rgba(148,163,184,0.8)', maxTicksLimit: 10 },
-      grid: { color: 'rgba(255,255,255,0.05)' },
+      ticks: {
+        color: 'rgba(26,37,65,0.70)',
+        maxTicksLimit: 10,
+        font: { family: '"JetBrains Mono", monospace', size: 11 },
+      },
+      grid: { color: 'rgba(26,37,65,0.06)' },
     },
     y: {
-      ticks: { color: 'rgba(148,163,184,0.8)' },
-      grid: { color: 'rgba(255,255,255,0.05)' },
+      ticks: {
+        color: 'rgba(26,37,65,0.70)',
+        font: { family: '"JetBrains Mono", monospace', size: 11 },
+      },
+      grid: { color: 'rgba(26,37,65,0.06)' },
     },
   },
+}
+
+// Editorial chart palette
+const EDITORIAL = {
+  ink: '#1a2541',
+  oxblood: '#7a1f2a',
+  oxbloodSoft: 'rgba(122,31,42,0.10)',
+  gold: '#b8923f',
+  goldSoft: 'rgba(184,146,63,0.15)',
+  forest: '#3a5a40',
+  forestSoft: 'rgba(58,90,64,0.12)',
+  rust: '#a0522d',
+  rustSoft: 'rgba(160,82,45,0.12)',
+  slate: '#4a5568',
+  slateSoft: 'rgba(74,85,104,0.10)',
 }
 
 const formatGBP = (value: number, maximumFractionDigits = 0) =>
@@ -311,9 +339,9 @@ export default function Home() {
     return {
       labels,
       datasets: [
-        { label: 'Total outstanding', data: sampledTimeline.map((m) => m.totalBalance), borderColor: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.08)', fill: true, tension: 0.25 },
-        { label: 'Undergrad balance', data: sampledTimeline.map((m) => m.undergraduateBalance), borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.08)', fill: false, tension: 0.2 },
-        { label: 'Postgrad balance', data: sampledTimeline.map((m) => m.postgraduateBalance), borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.08)', fill: false, borderDash: [6, 4], tension: 0.2 },
+        { label: 'Total outstanding', data: sampledTimeline.map((m) => m.totalBalance), borderColor: EDITORIAL.ink, backgroundColor: 'rgba(26,37,65,0.08)', fill: true, tension: 0.25 },
+        { label: 'Undergrad balance', data: sampledTimeline.map((m) => m.undergraduateBalance), borderColor: EDITORIAL.oxblood, backgroundColor: EDITORIAL.oxbloodSoft, fill: false, tension: 0.2 },
+        { label: 'Postgrad balance', data: sampledTimeline.map((m) => m.postgraduateBalance), borderColor: EDITORIAL.forest, backgroundColor: EDITORIAL.forestSoft, fill: false, borderDash: [6, 4], tension: 0.2 },
       ],
     }
   }, [sampledTimeline])
@@ -324,8 +352,8 @@ export default function Home() {
     return {
       labels,
       datasets: [
-        { label: 'Cumulative repaid', data: sampledTimeline.map((m) => m.cumulativeRepayments), borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.10)', fill: true, tension: 0.3 },
-        { label: 'Cumulative interest', data: sampledTimeline.map((m) => m.cumulativeInterest), borderColor: '#fb923c', backgroundColor: 'rgba(251,146,60,0.10)', fill: true, tension: 0.25 },
+        { label: 'Cumulative repaid', data: sampledTimeline.map((m) => m.cumulativeRepayments), borderColor: EDITORIAL.oxblood, backgroundColor: EDITORIAL.oxbloodSoft, fill: true, tension: 0.3 },
+        { label: 'Cumulative interest', data: sampledTimeline.map((m) => m.cumulativeInterest), borderColor: EDITORIAL.gold, backgroundColor: EDITORIAL.goldSoft, fill: true, tension: 0.25 },
       ],
     }
   }, [sampledTimeline])
