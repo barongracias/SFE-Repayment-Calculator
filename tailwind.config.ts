@@ -10,19 +10,20 @@ const config: Config = {
     extend: {
       fontFamily: {
         serif: [
+          'var(--font-serif)',
           '"Source Serif 4"',
-          '"Source Serif Pro"',
           'Georgia',
           '"Times New Roman"',
           'serif',
         ],
         display: [
+          'var(--font-display)',
           '"Newsreader"',
-          '"Source Serif 4"',
           'Georgia',
           'serif',
         ],
         mono: [
+          'var(--font-mono)',
           '"JetBrains Mono"',
           'ui-monospace',
           'SFMono-Regular',
@@ -30,6 +31,7 @@ const config: Config = {
           'monospace',
         ],
         sans: [
+          'var(--font-serif)',
           '"Source Serif 4"',
           'Georgia',
           'serif',
